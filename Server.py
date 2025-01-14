@@ -6,7 +6,6 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-
 # Инициализация базы данных
 def init_db():
     conn = sqlite3.connect('messages.db')
@@ -16,7 +15,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT NOT NULL,
             message TEXT NOT NULL,
-            timestamp TEXT NOT NULL
+            timestamp TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
         )
     ''')
     conn.commit()
@@ -24,30 +23,35 @@ def init_db():
 
 
 # Сохранение сообщения в базу данных
-@app.route('/save', methods=['POST'])
+@app.route('/api/receive', methods=['POST'])
 def save_message():
     data = request.json
     user_id = data.get('user_id')
     message = data.get('message')
 
-    if not user_id or not message:
-        return jsonify({'error': 'user_id and message are required'}), 400
+    if not message:
+        return jsonify({'error': 'Encrypted message is required'}), 400
+
+    # Здесь должна быть логика расшифровки
+    # Например:
+    # message = decrypt_message(encrypted_message)
+    # user_id = <вытянуть из расшифрованных данных>
 
     timestamp = datetime.now().isoformat()
 
     conn = sqlite3.connect('messages.db')
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO messages (user_id, message, timestamp) VALUES (?, ?, ?)', (user_id, message, timestamp))
+    cursor.execute('INSERT INTO messages (user_id, message) VALUES (?, ?)', (user_id, message))
     conn.commit()
     conn.close()
 
     return jsonify({'status': 'success', 'timestamp': timestamp}), 201
 
-
 # Получение новых сообщений
-@app.route('/messages', methods=['GET'])
+@app.route('/api/get/messages', methods=['GET'])
 def get_messages():
-    user_id = request.args.get('user_id')
+    data = request.json
+    user_id = data['user_id']
     last_timestamp = request.args.get('last_timestamp')
 
     if not user_id:
@@ -67,10 +71,16 @@ def get_messages():
     messages = cursor.fetchall()
     conn.close()
 
-    result = [{'id': msg[0], 'message': msg[1], 'timestamp': msg[2]} for msg in messages]
-    return jsonify(result)
+    # Здесь должна быть логика шифрования перед отправкой
+    # Например:
+    # encrypted_messages = encrypt_messages(messages)
 
+    return jsonify({'messages': messages})
+
+@app.route('/', methods=['GET'])
+def index():
+    return {"its": "work"}
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5500)
