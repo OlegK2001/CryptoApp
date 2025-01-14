@@ -25,6 +25,7 @@ def init_db():
 # Сохранение сообщения в базу данных
 @app.route('/api/receive', methods=['POST'])
 def save_message():
+    print("2")
     data = request.json
     user_id = data.get('user_id')
     message = data.get('message')
@@ -48,11 +49,16 @@ def save_message():
     return jsonify({'status': 'success', 'timestamp': timestamp}), 201
 
 # Получение новых сообщений
-@app.route('/api/get/messages', methods=['GET'])
+@app.route('/api/get/messages', methods=['POST'])
 def get_messages():
+    print("1")
     data = request.json
     user_id = data['user_id']
-    last_timestamp = request.args.get('last_timestamp')
+
+    try:
+        last_timestamp = data['last_timestamp']
+    except:
+        last_timestamp = None
 
     if not user_id:
         return jsonify({'error': 'user_id is required'}), 400
@@ -62,11 +68,10 @@ def get_messages():
 
     if last_timestamp:
         cursor.execute(
-            'SELECT id, message, timestamp FROM messages WHERE user_id = ? AND timestamp > ? ORDER BY timestamp ASC',
-            (user_id, last_timestamp))
+            'SELECT user_id, message, timestamp FROM messages WHERE timestamp > ? ORDER BY timestamp ASC',
+            last_timestamp)
     else:
-        cursor.execute('SELECT id, message, timestamp FROM messages WHERE user_id = ? ORDER BY timestamp ASC',
-                       (user_id,))
+        cursor.execute('SELECT user_id, message, timestamp FROM messages ORDER BY timestamp ASC')
 
     messages = cursor.fetchall()
     conn.close()
