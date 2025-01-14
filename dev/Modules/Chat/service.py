@@ -1,5 +1,8 @@
 import json
 import os
+
+from requests import Response
+
 from dev.config import requests, jsonify, FORWARD_URL, cripto, restore_key, messages_list
 
 
@@ -35,7 +38,6 @@ def generate_key(Key: str):
 
 
 def send_message(data):
-    print("1111")
     if not data or 'message' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
@@ -47,25 +49,35 @@ def send_message(data):
             "user_id": os.environ.get("user_id"),
             'message': message
         })
-
     except requests.RequestException as e:
-        print("21")
         return jsonify({'error': f'Failed to forward message: {str(e)}'}), 500
 
     return response.json()
 
 
 def receive_message():
-    try:
-        cripto_text = requests.post('https://vkr.npi24.keenetic.link/api/get/messages', json={
-                "user_id": os.environ.get("user_id")})
-        print("cripto_text", cripto_text.json())
-        messages = cripto_text # json.loads(decrypt_message(cripto_text).replace("'", '"'))
+    last_timestamp = os.environ.get("last_timestamp")
+    #try:
+    if last_timestamp is None:
+        cripto_text: Response = requests.post('https://vkr.npi24.keenetic.link/api/get/messages', json={
+           "user_id": os.environ.get("user_id")}).json()
+    else:
+        cripto_text: Response = requests.post('https://vkr.npi24.keenetic.link/api/get/messages', json={
+                "user_id": os.environ.get("user_id"),
+                "last_timestamp": last_timestamp
+        }).json()
 
-        for msg in messages:
-            msg["type"] = "received" if msg["type"] == "sent" else "sent"
-        return messages
-    except Exception as e:
-        return jsonify({'error': f'Failed to forward message: {str(e)}'}), 500
+    messages = cripto_text["messages"]  # json.loads(decrypt_message(cripto_text).replace("'", '"'))
+    print("messages: ", messages)
+    for msg in messages:
+        messages_list.append({
+                "type": "sent" if os.environ.get("user_id") == msg["user_id"] else "received",
+                "message": msg["message"]
+        })
 
-
+        os.environ['last_timestamp'] = msg["timestamp"]
+        print(" os.environ['last_timestamp'] = ", msg["timestamp"], " => ", os.environ.get("last_timestamp"))
+    return messages_list
+#    except Exception as e:
+#        print("except: ", e)
+#        return jsonify({'error': f'Failed to forward message: {str(e)}'}), 500
