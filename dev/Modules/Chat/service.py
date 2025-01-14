@@ -1,5 +1,6 @@
 import json
-from dev.config import requests, jsonify, FORWARD_URL, cripto, restore_key
+import os
+from dev.config import requests, jsonify, FORWARD_URL, cripto, restore_key, messages_list
 
 
 def encrypt_message(message):
@@ -34,30 +35,37 @@ def generate_key(Key: str):
 
 
 def send_message(data):
+    print("1111")
     if not data or 'message' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
     message = data['message']
+
     # Пересылаем сообщение на указанный веб-адрес
     try:
-        response = requests.post(FORWARD_URL + '/api/receive', json={
-            'type': 'received',
-            'message': encrypt_message(message)
+        response = requests.post('https://vkr.npi24.keenetic.link/api/receive', json={
+            "user_id": os.environ.get("user_id"),
+            'message': message
         })
-        print(response.raise_for_status())
+
     except requests.RequestException as e:
+        print("21")
         return jsonify({'error': f'Failed to forward message: {str(e)}'}), 500
 
     return response.json()
 
 
 def receive_message():
-    cripto_text = requests.get(FORWARD_URL + '/api/get/messages').json()
-    print(cripto.KEY)
-    messages = json.loads(decrypt_message(cripto_text).replace("'", '"'))
-    print(messages)
+    try:
+        cripto_text = requests.post('https://vkr.npi24.keenetic.link/api/get/messages', json={
+                "user_id": os.environ.get("user_id")})
+        print("cripto_text", cripto_text.json())
+        messages = cripto_text # json.loads(decrypt_message(cripto_text).replace("'", '"'))
 
-    for msg in messages:
-        msg["type"] = "received" if msg["type"] == "sent" else "sent"
-    return messages
+        for msg in messages:
+            msg["type"] = "received" if msg["type"] == "sent" else "sent"
+        return messages
+    except Exception as e:
+        return jsonify({'error': f'Failed to forward message: {str(e)}'}), 500
+
 
