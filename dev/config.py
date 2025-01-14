@@ -19,3 +19,6 @@ restore_key = RestorationKey()
 
 # Адрес для пересылки сообщений
 FORWARD_URL = "https://vkr.npi24.keenetic.link"  # Замените на нужный URL
+
+
+messages_list = []
