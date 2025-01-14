@@ -51,36 +51,27 @@ def save_message():
 # Получение новых сообщений
 @app.route('/api/get/messages', methods=['POST'])
 def get_messages():
-    print("1")
     data = request.json
-    user_id = data['user_id']
 
-    try:
-        last_timestamp = data['last_timestamp']
-    except:
-        last_timestamp = None
-
-    if not user_id:
-        return jsonify({'error': 'user_id is required'}), 400
+    last_timestamp = data.get("last_timestamp", "None")
 
     conn = sqlite3.connect('messages.db')
     cursor = conn.cursor()
 
-    if last_timestamp:
+    if last_timestamp == "None":
+        cursor.execute('SELECT user_id, message, timestamp FROM messages ORDER BY timestamp ASC')
+    else:
         cursor.execute(
             'SELECT user_id, message, timestamp FROM messages WHERE timestamp > ? ORDER BY timestamp ASC',
-            last_timestamp)
-    else:
-        cursor.execute('SELECT user_id, message, timestamp FROM messages ORDER BY timestamp ASC')
+            (last_timestamp,)  # Исправлено: передаем как кортеж
+        )
 
     messages = cursor.fetchall()
     conn.close()
 
-    # Здесь должна быть логика шифрования перед отправкой
-    # Например:
-    # encrypted_messages = encrypt_messages(messages)
+    result = [{'user_id': msg[0], 'message': msg[1], 'timestamp': msg[2]} for msg in messages]
+    return jsonify({'messages': result})
 
-    return jsonify({'messages': messages})
 
 @app.route('/', methods=['GET'])
 def index():
