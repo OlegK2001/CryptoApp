@@ -6,7 +6,6 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-
 # Инициализация базы данных
 def init_db():
     conn = sqlite3.connect('messages.db')
@@ -16,7 +15,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT NOT NULL,
             message TEXT NOT NULL,
-            timestamp TEXT NOT NULL
+            timestamp TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
         )
     ''')
     conn.commit()
@@ -24,53 +23,60 @@ def init_db():
 
 
 # Сохранение сообщения в базу данных
-@app.route('/save', methods=['POST'])
+@app.route('/api/receive', methods=['POST'])
 def save_message():
+    print("2")
     data = request.json
     user_id = data.get('user_id')
     message = data.get('message')
 
-    if not user_id or not message:
-        return jsonify({'error': 'user_id and message are required'}), 400
+    if not message:
+        return jsonify({'error': 'Encrypted message is required'}), 400
+
+    # Здесь должна быть логика расшифровки
+    # Например:
+    # message = decrypt_message(encrypted_message)
+    # user_id = <вытянуть из расшифрованных данных>
 
     timestamp = datetime.now().isoformat()
 
     conn = sqlite3.connect('messages.db')
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO messages (user_id, message, timestamp) VALUES (?, ?, ?)', (user_id, message, timestamp))
+    cursor.execute('INSERT INTO messages (user_id, message) VALUES (?, ?)', (user_id, message))
     conn.commit()
     conn.close()
 
     return jsonify({'status': 'success', 'timestamp': timestamp}), 201
 
-
 # Получение новых сообщений
-@app.route('/messages', methods=['GET'])
+@app.route('/api/get/messages', methods=['POST'])
 def get_messages():
-    user_id = request.args.get('user_id')
-    last_timestamp = request.args.get('last_timestamp')
+    data = request.json
 
-    if not user_id:
-        return jsonify({'error': 'user_id is required'}), 400
+    last_timestamp = data.get("last_timestamp", "None")
 
     conn = sqlite3.connect('messages.db')
     cursor = conn.cursor()
 
-    if last_timestamp:
-        cursor.execute(
-            'SELECT id, message, timestamp FROM messages WHERE user_id = ? AND timestamp > ? ORDER BY timestamp ASC',
-            (user_id, last_timestamp))
+    if last_timestamp == "None":
+        cursor.execute('SELECT user_id, message, timestamp FROM messages ORDER BY timestamp ASC')
     else:
-        cursor.execute('SELECT id, message, timestamp FROM messages WHERE user_id = ? ORDER BY timestamp ASC',
-                       (user_id,))
+        cursor.execute(
+            'SELECT user_id, message, timestamp FROM messages WHERE timestamp > ? ORDER BY timestamp ASC',
+            (last_timestamp,)  # Исправлено: передаем как кортеж
+        )
 
     messages = cursor.fetchall()
     conn.close()
 
-    result = [{'id': msg[0], 'message': msg[1], 'timestamp': msg[2]} for msg in messages]
-    return jsonify(result)
+    result = [{'user_id': msg[0], 'message': msg[1], 'timestamp': msg[2]} for msg in messages]
+    return jsonify({'messages': result})
 
+
+@app.route('/', methods=['GET'])
+def index():
+    return {"its": "work"}
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5500)

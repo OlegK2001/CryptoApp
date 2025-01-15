@@ -26,7 +26,7 @@
         const messageInput = document.getElementById('messageInput');
 
         // Переменная для хранения предыдущих данных сообщений
-        let previousMessages = [];
+        var previousMessages = [];
 
         // Функция добавления сообщения
         function addMessage(message, type) {
@@ -41,7 +41,8 @@
         sendButton.addEventListener('click', () => {
             const message = messageInput.value.trim();
             if (message) {
-                addMessage(message, 'sent'); // Отправленное сообщение
+                previousMessages += {'message': message, type: 'sent'};
+                addMessage(message, "sent");
                 messageInput.value = '';
                 // Отправить сообщение на сервер
                 fetch('/api/send', {
@@ -80,7 +81,7 @@
         // Загрузка сообщений при открытии страницы
         window.addEventListener('load', () => {
             fetchMessages(); // Первая загрузка сообщений
-            setInterval(fetchMessages, 1000); // Проверка каждые 1 секунду
+            setInterval(fetchMessages, 5000); // Проверка каждые 1 секунду
         });
     </script>
 </body>
