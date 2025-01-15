@@ -26,7 +26,7 @@
         const messageInput = document.getElementById('messageInput');
 
         // Переменная для хранения предыдущих данных сообщений
-        let previousMessages = [];
+        var previousMessages = [];
 
         // Функция добавления сообщения
         function addMessage(message, type) {
@@ -41,7 +41,8 @@
         sendButton.addEventListener('click', () => {
             const message = messageInput.value.trim();
             if (message) {
-                addMessage(message); // Отправленное сообщение
+                previousMessages += {'message': message, type: 'sent'};
+                addMessage(message, "sent");
                 messageInput.value = '';
                 // Отправить сообщение на сервер
                 fetch('/api/send', {

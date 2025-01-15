@@ -12,11 +12,19 @@ def encrypt_message(message):
 
 
 def decrypt_message(message):
-    blocks = cripto.block(message['messages'])
+    # Разбиваем сообщение на блоки
+    blocks = cripto.block(message)
 
+    # Преобразуем каждый блок в бинарный вид
     hex_to_bin = [cripto.hex_to_bin(block) for block in blocks]
+
+    # Расшифровываем сообщение
     decrypt = cripto.go_to_decrtipto_message(hex_to_bin)
-    return decrypt
+
+    # Удаляем лишние символы заполнения (например, пробелы или '\0')
+    cleaned_message = decrypt.rstrip('\0').rstrip()
+
+    return cleaned_message
 
 
 def generate_key(Key: str):
@@ -47,7 +55,7 @@ def send_message(data):
     try:
         response = requests.post('https://vkr.npi24.keenetic.link/api/receive', json={
             "user_id": os.environ.get("user_id"),
-            'message': message
+            'message': encrypt_message(message)
         })
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to forward message: {str(e)}'}), 500
@@ -67,12 +75,12 @@ def receive_message():
                 "last_timestamp": last_timestamp
         }).json()
 
-    messages = cripto_text["messages"]  # json.loads(decrypt_message(cripto_text).replace("'", '"'))
-    print("messages: ", messages)
-    for msg in messages:
+    cripto_messages = cripto_text["messages"]  # json.loads(decrypt_message(cripto_text).replace("'", '"'))
+    print("messages: ", cripto_messages)
+    for msg in cripto_messages:
         messages_list.append({
                 "type": "sent" if os.environ.get("user_id") == msg["user_id"] else "received",
-                "message": msg["message"]
+                "message": decrypt_message(msg["message"])
         })
 
         os.environ['last_timestamp'] = msg["timestamp"]
