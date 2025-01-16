@@ -4,11 +4,12 @@ import reedsolo
 class RestorationKey:
     def __init__(self):
         # Задаем параметры
-        self.bit_sequence_length = 1024  # Длина исходной двоичной последовательности в битах
+        self.bit_sequence_length = 4096  # Длина исходной двоичной последовательности в битах
         self.error_symbols = 80  # Количество символов (байт), которые будут заменены ошибками
 
         # Создаем двоичную последовательность длиной 256 бит
-        self.original_bits = ''
+        self.original_bits = None
+        self.decoded_bits = None
         self.rs = reedsolo.RSCodec(self.error_symbols * 2)
 
     def generate_bite(self):
@@ -30,8 +31,9 @@ class RestorationKey:
         # Декодируем и исправляем ошибки с использованием контрольных символов
         try:
             decoded_data, _, _ = self.rs.decode(data_with_errors_and_controls)
+            self.decoded_bits = ''.join(f'{byte:08b}' for byte in decoded_data)
             print("Ошибки успешно исправлены.")
         except reedsolo.ReedSolomonError as e:
             print("Не удалось исправить ошибки:", e)
 
-        self.decoded_bits = ''.join(f'{byte:08b}' for byte in decoded_data)
+

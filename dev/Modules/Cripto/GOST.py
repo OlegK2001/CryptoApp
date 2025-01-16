@@ -203,7 +203,7 @@ class Cripto:
 
         return result
 
-    def galois_field_multiply_fast(self, first: int, second: int) -> int:
+    def galois_field_multiply_fast(self, first: int, second: int):
         """
         Быстрое умножение в поле Галуа с использованием предвычисленной таблицы.
 

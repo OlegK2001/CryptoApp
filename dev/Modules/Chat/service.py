@@ -28,7 +28,6 @@ def decrypt_message(message):
 
 
 def generate_key(Key: str):
-    print("ea")
     restore_key.original_bits = Key
     restoring_bite_code = restore_key.generate_bite()
     cripto.KEY = Key
@@ -36,13 +35,20 @@ def generate_key(Key: str):
 
     # Пересылаем сообщение на указанный веб-адрес
     try:
-        response = requests.post(FORWARD_URL + '/api/editKey', json={
-            'type': 'received',
-            'message': restoring_bite_code
+        response = requests.post(FORWARD_URL + '/api/restorationKey', json={
+            'restoration_bite': restoring_bite_code
         })
         response.raise_for_status()
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to forward message!!!!!!: {str(e)}'}), 500
+
+
+def restorationKey(control_bite):
+    restore_key.original_bits = cripto.KEY
+    restore_key.received_key(control_bite)
+    cripto.KEY = restore_key.decoded_bits
+    cripto.key_dev()
+
 
 
 def send_message(data):

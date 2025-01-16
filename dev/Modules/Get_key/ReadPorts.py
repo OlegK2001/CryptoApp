@@ -89,7 +89,7 @@ def close_ports():
 def send_key_to_service(key):
     """Отправка ключа на сервер через POST-запрос."""
     try:
-        url = "http://127.0.0.1:5000/api/editKey"  # Замените на актуальный адрес
+        url = "http://127.0.0.1:4500/api/editKey"  # Замените на актуальный адрес
         payload = {"key": key}
         headers = {"Content-Type": "application/json"}
 
